@@ -11,7 +11,7 @@ using Python, Cython and C, and the code is parallelized with Pthreads.
 This thesis extends and improves a master's thesis by Torkil Vederhus, that can be found at: 
 http://urn.nb.no/URN:NBN:no-39032.
 
-Vederhus (2013) wrote several tools for the Genomic HyperBrowser, (https://hyperbrowser.uio.no/comparative/):
+Vederhus (2013) wrote several tools for the Genomic HyperBrowser, https://hyperbrowser.uio.no/comparative/:
 - Fisher Exact Test SNP Tool
 - Filter Fisher Scores
 - Cluster Separation Score
