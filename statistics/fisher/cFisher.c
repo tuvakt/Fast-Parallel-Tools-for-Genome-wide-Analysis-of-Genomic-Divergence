@@ -38,84 +38,80 @@
 void compute(double *avals, double *bvals, int *apos, int *bpos, int regstart, int regend, int wsize, int wstep, int alen, int blen,
 	     double perc, double *scores, double *stddev) {
 
-	struct timeval before, after;
-	gettimeofday(&before, NULL);
-	int start, stop, npos, asize, bsize, nsamples, wcount;
-	int *aidx;
-	int *bidx;
-	int *f;
-	int *tmp;
-	double *results;
-	double *fetscores = NULL;
-	double *samples = NULL;
-	double *stdsamples;
+    struct timeval before, after;
+    gettimeofday(&before, NULL);
+    int start, stop, npos, asize, bsize, nsamples, wcount;
+    int *aidx;
+    int *bidx;
+    int *f;
+    int *tmp;
+    double *results;
+    double *fetscores = NULL;
+    double *samples = NULL;
+    double *stdsamples;
+    
+    /* get size of a and b*/
+    asize = get_population_size(apos);
+    bsize = get_population_size(bpos);
+    printf("asize %d\n", asize);
+    printf("bsize %d\n", bsize);
+    
+    wcount = 0;
+    start = 0;
+    stop = wsize;
+    nsamples = 100;
+    
+    /* setup idx arrays */
+    aidx = (int*)malloc(2*sizeof(int));
+    bidx = (int*)malloc(2*sizeof(int));
+    aidx[0] = 0; aidx[1] = 0;
+    bidx[0] = 0; bidx[1] = 0;
+    
+    /* helper arrays for FET calculation */
+    f = (int*)malloc(4*sizeof(int));
+    tmp = (int*)malloc(4*sizeof(int));
+    results = (double*)malloc(2*sizeof(double));
+    stdsamples = (double*)malloc(nsamples*sizeof(double));   
 
-	/* get size of a and b*/
-	asize = get_population_size(apos);
-	bsize = get_population_size(bpos);
-	printf("asize %d\n", asize);
-	printf("bsize %d\n", bsize);
+    /* prng seed */
+    unsigned short state[3] = {0,0,0};
+    unsigned short seed = time(NULL);
+    memcpy(state, &seed, sizeof(seed));
+    
+    while (start + wsize <= regend + wstep) {
 
-	wcount = 0;
-	start = 0;
-	stop = wsize;
-	nsamples = 100;
-
-	// for debug
-	//regend = start + wsize + 8*wstep;
-
-	/* setup idx arrays */
-	aidx = (int*)malloc(2*sizeof(int));
-	bidx = (int*)malloc(2*sizeof(int));
-	aidx[0] = 0; aidx[1] = 0;
-	bidx[0] = 0; bidx[1] = 0;
-
-	/* kommenter der de def. */
-  	f = (int*)malloc(4*sizeof(int));
-  	tmp = (int*)malloc(4*sizeof(int));
-  	results = (double*)malloc(2*sizeof(double));
-  	stdsamples = (double*)malloc(nsamples*sizeof(double));
-
-
-  	/* prng */
-  	unsigned short state[3] = {0,0,0};
-  	unsigned short seed = time(NULL);
-  	memcpy(state, &seed, sizeof(seed));
-
-  	while (start + wsize <= regend + wstep) {
-
-  		slide_right(aidx, apos, start, stop, alen);
-  		slide_right(bidx, bpos, start, stop, blen);
-  		npos = (aidx[1] - aidx[0])/asize;
-
-  		if (npos > 0) {
-  			// reallocing
-  			// In case that ptr is a null pointer, the function behaves like malloc, assigning a new block of size bytes and returning a pointer to its beginning.
-  			fetscores = (double*)realloc(fetscores, npos*sizeof(double));
-  		  	samples = (double*)realloc(samples, npos*sizeof(double));
-  		  fisher_exact_test(results, &(avals[aidx[0]]), &(bvals[bidx[0]]), asize, bsize, npos, f, tmp, samples, stdsamples, nsamples, fetscores, state, perc);
-		  scores[wcount] = results[0];
-		  stddev[wcount] = results[1];
-  		}
-  		start += wstep;
-  		stop += wstep;
-  		wcount++;
-  	}
-
-  	printf("wcount %d\n", wcount);
-
-  	/* cleanup */
-  	free(aidx);
-  	free(bidx);
-  	free(f);
-  	free(tmp);
-  	free(results);
-  	free(samples);
-  	free(stdsamples);
-  	free(fetscores);
-
-  	gettimeofday(&after, NULL);
-  	printf("Time %g\n", time_ddiff(before, after));
+        slide_right(aidx, apos, start, stop, alen);
+	slide_right(bidx, bpos, start, stop, blen);
+	npos = (aidx[1] - aidx[0])/asize;
+	
+	if (npos > 0) {
+	    // reallocing
+	    // In case that ptr is a null pointer, the function behaves like malloc, assigning a new block of size bytes and returning a pointer to its beginning.
+	    fetscores = (double*)realloc(fetscores, npos*sizeof(double));
+	    samples = (double*)realloc(samples, npos*sizeof(double));
+	    fisher_exact_test(results, &(avals[aidx[0]]), &(bvals[bidx[0]]), asize, bsize, npos, f, tmp, samples, stdsamples, nsamples, fetscores, state, perc);
+	    scores[wcount] = results[0];
+	    stddev[wcount] = results[1];
+	}
+	start += wstep;
+	stop += wstep;
+	wcount++;
+    }
+    
+    printf("wcount %d\n", wcount);
+    
+    /* cleanup */
+    free(aidx);
+    free(bidx);
+    free(f);
+    free(tmp);
+    free(results);
+    free(samples);
+    free(stdsamples);
+    free(fetscores);
+    
+    gettimeofday(&after, NULL);
+    printf("Time %g\n", time_ddiff(before, after));
 }
 
 
@@ -126,10 +122,10 @@ void compute(double *avals, double *bvals, int *apos, int *bpos, int regstart, i
  * inlined for speed
  */
 inline int compare_doubles (const void *a, const void *b) {
-  const double *da = (const double *) a;
-  const double *db = (const double *) b;
-
-  return (*da > *db) - (*da < *db);
+    const double *da = (const double *) a;
+    const double *db = (const double *) b;
+    
+    return (*da > *db) - (*da < *db);
 }
 
 /*
@@ -138,8 +134,8 @@ inline int compare_doubles (const void *a, const void *b) {
  * Inlined for speed
  */
 inline double percentile(double *fetscores, int n, double percentile) {
-	int idx;
-	double delta;
+    int idx;
+    double delta;
     /* sort inplace with quick sort */
     qsort(fetscores, n, sizeof(double), compare_doubles);
     idx = (n-1)*percentile; // indices from 0 to n-1
@@ -174,28 +170,28 @@ inline double percentile(double *fetscores, int n, double percentile) {
 void fisher_exact_test(double *results, double *avals, double *bvals, int asize, int bsize, int npos, int *f, int *tmp,
 		       double *samples, double *stdsamples, int nsamples, double *fetscores, unsigned short state[], double perc) {
 
-	int i;
-	double fetscore;
-
-	/* For each SNP position,"
-	count frequencies and
-   	calculate the negative log 10 fet score
-	For every SNP, we calculated -log10(P) from a Fisher’s exact test (L10FET)." (Burke et al).*/
-	for (i = npos; i--; ) {
-		fetcount(f, avals, bvals, i, asize, bsize);
-		fetscore = fet(f, tmp);
-		fetscores[i] = -1.0*log10(fetscore);
-	}
-	/* the score at perc% percentile
-	  indicates the importance of the window
-	*/
-	results[0] = percentile(fetscores, npos, perc);
-	/* calculate std.dev. for the scores.
-	 Burke et al. estimated std by calculating
-     std of 100 boostrap replicate samples of L10FET5%Q
-	 */
-
-	results[1] = calc_std(fetscores, samples, stdsamples, nsamples, npos, perc, state);
+    int i;
+    double fetscore;
+    
+    /* For each SNP position,"
+       count frequencies and
+       calculate the negative log 10 fet score
+       For every SNP, we calculated -log10(P) from a Fisher’s exact test (L10FET)." (Burke et al).*/
+    for (i = npos; i--; ) {
+        fetcount(f, avals, bvals, i, asize, bsize);
+	fetscore = fet(f, tmp);
+	fetscores[i] = -1.0*log10(fetscore);
+    }
+    /* the score at perc% percentile
+       indicates the importance of the window
+    */
+    results[0] = percentile(fetscores, npos, perc);
+    /* calculate std.dev. for the scores.
+       Burke et al. estimated std by calculating
+       std of 100 boostrap replicate samples of L10FET5%Q
+    */
+    
+    results[1] = calc_std(fetscores, samples, stdsamples, nsamples, npos, perc, state);
 }
 
 
@@ -211,53 +207,50 @@ void fisher_exact_test(double *results, double *avals, double *bvals, int asize,
  */
 void fetcount(int *f, double *avals, double *bvals, int idx, int asize, int bsize) {
 
-  int i, majsum, minsum, astart, bstart;
-
-  astart = idx*asize;
-  bstart = idx*bsize;
-
-  majsum = 0; minsum = 0;
-  for (i = astart; i < (astart+asize); i++) {
-    if (avals[i] == 3) {
-      majsum++;
-    } else if (avals[i] == -3) {
-      minsum++;
+    int i, majsum, minsum, astart, bstart;
+    
+    astart = idx*asize;
+    bstart = idx*bsize;
+    
+    majsum = 0; minsum = 0;
+    for (i = astart; i < (astart+asize); i++) {
+        if (avals[i] == 3) {
+	    majsum++;
+	} else if (avals[i] == -3) {
+	    minsum++;
+	}
     }
-  }
-  
-  f[0] = majsum;
-  f[1] = minsum;
-  
-  majsum = 0; minsum = 0;
-  for (i = bstart; i < (bstart+bsize); i++) {
-    if (bvals[i] == 3) {
-      majsum++;
-    } else if (bvals[i] == -3) {
-      minsum++;
+    
+    f[0] = majsum;
+    f[1] = minsum;
+    
+    majsum = 0; minsum = 0;
+    for (i = bstart; i < (bstart+bsize); i++) {
+        if (bvals[i] == 3) {
+	    majsum++;
+	} else if (bvals[i] == -3) {
+	    minsum++;
+	}
     }
-  }
-  
-  f[2] = majsum;
-  f[3] = minsum;
+    
+    f[2] = majsum;
+    f[3] = minsum;
 }
- 
-/* Rosettacode
-http://rosettacode.org/wiki/Evaluate_binomial_coefficients#C
-We go to some effort to handle overflow situations
 
-write more
-
+/* From Rosettacode
+   http://rosettacode.org/wiki/Evaluate_binomial_coefficients#C
+   We go to some effort to handle overflow situations  
 */
  
 inline unsigned long gcd_ui(unsigned long x, unsigned long y) {
-  unsigned long tmp;
-  if (y < x) {
-      tmp = x; x = y; y = tmp;   /*swap x and y*/
-  }
-  while (y > 0) {
-      tmp = y;  y = x % y;  x = tmp;  /* y1 <- x0 % y0 ; x1 <- y0 */
-  }
-  return x;
+    unsigned long tmp;
+    if (y < x) {
+        tmp = x; x = y; y = tmp;   /*swap x and y*/
+    }
+    while (y > 0) {
+        tmp = y;  y = x % y;  x = tmp;  /* y1 <- x0 % y0 ; x1 <- y0 */
+    }
+    return x;
 }
 
 unsigned long binomial(unsigned long n, unsigned long k) {
@@ -284,7 +277,7 @@ unsigned long binomial(unsigned long n, unsigned long k) {
 	    result *= n;
 	    result /= i;
 	}
-		n--;
+	n--;
     }
 
     return result;
@@ -348,7 +341,7 @@ void shift_table(int *f, int *tmp, int n) {
     swap(&tmp[2], &tmp[3]);
 
     for (i = n; i--; ) {
-      f[i] = tmp[i];
+        f[i] = tmp[i];
     }
 }
 
@@ -428,9 +421,9 @@ double fet(int *f, int *tmp) {
     /* while a0 >= 0, go on */
     while (f[0] > 0) {
     	f[1]++; f[2]++;   /* bi+1 = bi + 1, ci+1 = ci + 1; */
-		P1 = (1.0*f[0]*f[3])/(f[1]*f[2])*P1;
-		P += P1;
-		f[0]--; f[3]--;   /* ai+1 = ai - 1; di+1 = di - 1; */
+	P1 = (1.0*f[0]*f[3])/(f[1]*f[2])*P1;
+	P += P1;
+	f[0]--; f[3]--;   /* ai+1 = ai - 1; di+1 = di - 1; */
     }
 
     /* calculate the two tailed prob by calc the prob of the other extreme */
@@ -445,18 +438,18 @@ double fet(int *f, int *tmp) {
     	P2 = fet_p(f[0], f[1], f[2], f[3]);
 	
     	while (P2 < P0) {
-    		P += P2;
-    		if (f[1] == 0 || f[2] == 0) {
-    			break;
-    		}
-    		f[0]++; f[3]++; /* ai+1 = ai + 1, di+1 = di + 1; */
-    		P2 = (1.0*f[1]*f[2])/(f[0]*f[3])*P2;
-    		f[1]--; f[2]--; /*bi+1 = bi - 1; ci+1 = ci - 1; */
-		}
+	  P += P2;
+	  if (f[1] == 0 || f[2] == 0) {
+	      break;
+	  }
+	  f[0]++; f[3]++; /* ai+1 = ai + 1, di+1 = di + 1; */
+	  P2 = (1.0*f[1]*f[2])/(f[0]*f[3])*P2;
+	  f[1]--; f[2]--; /*bi+1 = bi - 1; ci+1 = ci - 1; */
+	}
     }
     /* TODO: What about this ? */
     if (P > 1)
-    	P = 1;
+        P = 1;
     return P;
     
 }
@@ -503,7 +496,7 @@ double std(double *a, int n) {
     mu = mean(a, n);
     sum = 0;
     for (i = n; i--; ) {
-    	sum += (a[i] - mu)*(a[i] - mu);
+        sum += (a[i] - mu)*(a[i] - mu);
     }
     sum /= n;
     return sqrt(sum);
@@ -552,12 +545,12 @@ PO Box 1080 Blindern, NO-0316 Oslo, Norway
  *
  */
 inline int long random_int_nrand48(long n, unsigned short state[]) {
-	long random_max = RAND_MAX;
-	long limit = random_max - (random_max + 1) % n;
-	long r = nrand48(state);
-	while (r > limit)
-		r = nrand48(state);
-	return r % n;
+    long random_max = RAND_MAX;
+    long limit = random_max - (random_max + 1) % n;
+    long r = nrand48(state);
+    while (r > limit)
+        r = nrand48(state);
+    return r % n;
 }
 
 /*
@@ -595,12 +588,12 @@ inline void bootstrap_sample(double *fetscores, double *samples, int n, int npos
  * @param state a seed for the prng nrand48
  */
 double calc_std(double *fetscores, double *samples, double *stdsamples, int nsamples, int npos, double perc, unsigned short state[]) {
-	int i, j;
-	for (i = 0; i < nsamples; i++) {
-		bootstrap_sample(fetscores, samples, npos, npos, state);
-		stdsamples[i] = percentile(samples, npos, perc);
-	}
-	return std(stdsamples, nsamples);
+    int i, j;
+    for (i = 0; i < nsamples; i++) {
+        bootstrap_sample(fetscores, samples, npos, npos, state);
+	stdsamples[i] = percentile(samples, npos, perc);
+    }
+    return std(stdsamples, nsamples);
 }
 
 

@@ -23,14 +23,14 @@
  * @return the size of the population
  */
 int get_population_size(int *pos) {
-	int firstpos = pos[0];
-	int nextpos = firstpos;
-	int size = 0;
-	while(nextpos == firstpos) {
-		size++;
-		nextpos = pos[size];
-	}
-	return size;
+    int firstpos = pos[0];
+    int nextpos = firstpos;
+    int size = 0;
+    while(nextpos == firstpos) {
+        size++;
+	nextpos = pos[size];
+    }
+    return size;
 }
 
 /**
@@ -48,29 +48,26 @@ int get_population_size(int *pos) {
  */
 void slide_right(int *idx, int *positions, int start, int stop, int length) {
 
-	//TODO: What to do when wsize and astep doesn't add up? if chr length is not dividable by wsize?
-	// include last window in prev window
-
-  /* idx: holds previous left/right idx
-     when returned, holds new left/right idx */
-  int left, right;
-
-  left = idx[0];
-  right = idx[1];
-
-  // find the new array index position of left and right idx-pointer
-  while (left < length && positions[left] < start) {
-    left++;
-  }
-
-  while(right < length && positions[right] <= stop) {
-    right++;
-  }
-
-  // we need the startidx for a and b, and the number of positions in the window
-  idx[0] = left;
-  idx[1] = right;
-
+    /* idx: holds previous left/right idx
+       when returned, holds new left/right idx */
+    int left, right;
+    
+    left = idx[0];
+    right = idx[1];
+    
+    // find the new array index position of left and right idx-pointer
+    while (left < length && positions[left] < start) {
+        left++;
+    }
+    
+    while(right < length && positions[right] <= stop) {
+      right++;
+    }
+    
+    // we need the startidx for a and b, and the number of positions in the window
+    idx[0] = left;
+    idx[1] = right;
+    
 }
 
 /*
@@ -79,27 +76,27 @@ void slide_right(int *idx, int *positions, int start, int stop, int length) {
  */
 int readln (int fd, char *buf, int max)
 {
-  int ant=0;
-  int r;
-
-  while (ant < max) {
-    if ((r = read(fd, &buf[ant], 1))!=1) {
-    	if (r < 0)
-    		printf(" Error reading character: errno: %d read %d chars \n", errno, r);
-    	else
-    		printf("END OF FILE \n");
-      return -1;
+    int ant=0;
+    int r;
+    
+    while (ant < max) {
+        if ((r = read(fd, &buf[ant], 1))!=1) {
+    	  if (r < 0)
+	      printf(" Error reading character: errno: %d read %d chars \n", errno, r);
+	  else
+	      printf("END OF FILE \n");
+	  return -1;
+	}
+	if (buf[ant]=='\n' || buf[ant]=='\r') {
+	    if (ant > 0) {
+	        buf[ant] = 0;
+		break;
+	    }
+	}
+	else
+	    ant++;
     }
-    if (buf[ant]=='\n' || buf[ant]=='\r') {
-      if (ant > 0) {
-    	  buf[ant] = 0;
-    	  break;
-      }
-    }
-    else
-      ant++;
-  }
-  return ant;
+    return ant;
 }
 
 /**
@@ -108,12 +105,12 @@ int readln (int fd, char *buf, int max)
  * @param after the last struct timeval
  */
 double time_ddiff(struct timeval before, struct timeval after) {
-	double sec_diff, msec_diff;
-
-	sec_diff = (double)(after.tv_sec - before.tv_sec);
-	msec_diff = (double)(after.tv_usec - before.tv_usec);
-
-	return sec_diff + msec_diff/1000000.0;
+    double sec_diff, msec_diff;
+    
+    sec_diff = (double)(after.tv_sec - before.tv_sec);
+    msec_diff = (double)(after.tv_usec - before.tv_usec);
+    
+    return sec_diff + msec_diff/1000000.0;
 }
 
 

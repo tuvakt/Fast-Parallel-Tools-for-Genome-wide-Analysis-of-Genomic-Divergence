@@ -49,111 +49,110 @@
 void compute(double *avals, double *bvals, int *apos, int *bpos, int regstart, int regend, int wsize, int wstep, int alen, int blen, int treshold, int runs,
 		int drosophila, int mds, double *scores, double *p) {
 
-	int i, start, stop, npos, asize, bsize, m, dims, wcount;
-	double result;
-	int *aidx;
-	int *bidx;
-	int *atracks;
-	int *btracks;
-	int *signtracks;
-	double **dissimilarity;
-	double **distance;
-	double **X;
-	double **B;
-	double **Z;
-	double **tmp;
-	double **L;
-	double **Q;
-	double **r;
-
-	/* get number of individuals in group a and b */
-	asize = get_population_size(apos);
-	bsize = get_population_size(bpos);
-	printf("asize %d\n", asize);
-	printf("bsize %d\n", bsize);
-
-	m = asize + bsize;
-	dims = 2;
-	wcount = 0; 	// adress in array is window_start/wstep
-	start = 0;
-	stop = wsize;
-	result = 0;
-	npos = 0;
-	// to control number of calcs, only for debug
-	//regend = start + wsize + 10*wstep;
-
-	/* setup idx arrays */
-	aidx = (int*)malloc(2*sizeof(int));
-	bidx = (int*)malloc(2*sizeof(int));
-	aidx[0] = 0; aidx[1] = 0;
-	bidx[0] = 0; bidx[1] = 0;
-
-	/* setup track arrays */
-	atracks = (int*)malloc(asize*sizeof( int));
-	btracks = (int*)malloc(bsize*sizeof( int));
-	signtracks = ( int*)malloc(m*sizeof( int));
-	for (i = m; i--;) {
-		if (i < asize) atracks[i] = i;
-		if (i >= asize) btracks[i-asize] = i;
-		signtracks[i] = i;
-	}
-
-	/* allocate matrixes (2d arrays) */
-	allocate_matrix(&dissimilarity, m, m);
-	allocate_matrix(&distance, m, m);
-	allocate_matrix(&X, m, dims);
-	allocate_matrix(&B, m, m);
-	allocate_matrix(&Z, m, m);
-	allocate_matrix(&tmp, m, m);
-	allocate_matrix(&Q, m, dims);
-	allocate_matrix(&L, dims, dims);
-	allocate_matrix(&r, m, dims);
-
-	unsigned short state[3] = {0,0,0};
-	unsigned short seed = time(NULL);
-	memcpy(state, &seed, sizeof(seed));
-	srand48(time(NULL));
-
-  while (start + wsize <= regend + wstep) {
-
-    slide_right(aidx, apos, start, stop, alen);
-    slide_right(bidx, bpos, start, stop, blen);
-    npos = (aidx[1] - aidx[0])/asize;
-
-    if (npos > 0) {
-    	result = cluster_separation_scorer(distance, &(avals[aidx[0]]), &(bvals[bidx[0]]), atracks, btracks, asize, bsize, npos, dissimilarity,
-    			drosophila, mds, X, B, Z, tmp, L, Q, r);
-
-    	if (result != -1) {
-    		scores[wcount] = result;
-    		// not eligible for drosophila
-    		p[wcount] = significance_treshold(distance, signtracks, asize, bsize, scores[wcount], treshold, runs, state);
-    	}
+    int i, start, stop, npos, asize, bsize, m, dims, wcount;
+    double result;
+    int *aidx;
+    int *bidx;
+    int *atracks;
+    int *btracks;
+    int *signtracks;
+    double **dissimilarity;
+    double **distance;
+    double **X;
+    double **B;
+    double **Z;
+    double **tmp;
+    double **L;
+    double **Q;
+    double **r;
+    
+    /* get number of individuals in group a and b */
+    asize = get_population_size(apos);
+    bsize = get_population_size(bpos);
+    printf("asize %d\n", asize);
+    printf("bsize %d\n", bsize);
+    
+    m = asize + bsize;
+    dims = 2;
+    wcount = 0; 	// adress in array is window_start/wstep
+    start = 0;
+    stop = wsize;
+    result = 0;
+    npos = 0;
+    // to control number of calcs, only for debug
+    //regend = start + wsize + 10*wstep;
+    
+    /* setup idx arrays */
+    aidx = (int*)malloc(2*sizeof(int));
+    bidx = (int*)malloc(2*sizeof(int));
+    aidx[0] = 0; aidx[1] = 0;
+    bidx[0] = 0; bidx[1] = 0;
+    
+    /* setup track arrays */
+    atracks = (int*)malloc(asize*sizeof( int));
+    btracks = (int*)malloc(bsize*sizeof( int));
+    signtracks = ( int*)malloc(m*sizeof( int));
+    for (i = m; i--;) {
+        if (i < asize) atracks[i] = i;
+        if (i >= asize) btracks[i-asize] = i;
+        signtracks[i] = i;
     }
-    start += wstep;
-    stop += wstep;
-    wcount++;
 
-  }
+    /* allocate matrixes (2d arrays) */
+    allocate_matrix(&dissimilarity, m, m);
+    allocate_matrix(&distance, m, m);
+    allocate_matrix(&X, m, dims);
+    allocate_matrix(&B, m, m);
+    allocate_matrix(&Z, m, m);
+    allocate_matrix(&tmp, m, m);
+    allocate_matrix(&Q, m, dims);
+    allocate_matrix(&L, dims, dims);
+    allocate_matrix(&r, m, dims);
+    
+    unsigned short state[3] = {0,0,0};
+    unsigned short seed = time(NULL);
+    memcpy(state, &seed, sizeof(seed));
+    srand48(time(NULL));
+    
+    while (start + wsize <= regend + wstep) {
+      
+        slide_right(aidx, apos, start, stop, alen);
+	slide_right(bidx, bpos, start, stop, blen);
+	npos = (aidx[1] - aidx[0])/asize;
+	
+	if (npos > 0) {
+	    result = cluster_separation_scorer(distance, &(avals[aidx[0]]), &(bvals[bidx[0]]), atracks, btracks, asize, bsize, npos, dissimilarity,
+					       drosophila, mds, X, B, Z, tmp, L, Q, r);
 
-  printf("npos in last window %d\n", npos);
-  printf("wcount %d\n", wcount);
-
-  /* cleanup */
-  free(aidx);
-  free(bidx);
-  free(atracks);
-  free(btracks);
-  free(signtracks);
-  deallocate_matrix(dissimilarity);
-  deallocate_matrix(distance);
-  deallocate_matrix(X);
-  deallocate_matrix(B);
-  deallocate_matrix(Z);
-  deallocate_matrix(tmp);
-  deallocate_matrix(Q);
-  deallocate_matrix(L);
-  deallocate_matrix(r);
+	    if (result != -1) {
+	        scores[wcount] = result;
+	        // not eligible for drosophila
+	        p[wcount] = significance_treshold(distance, signtracks, asize, bsize, scores[wcount], treshold, runs, state);
+	    }
+	}
+	start += wstep;
+	stop += wstep;
+	wcount++;	
+    }
+	
+    printf("npos in last window %d\n", npos);
+    printf("wcount %d\n", wcount);
+    
+    /* cleanup */
+    free(aidx);
+    free(bidx);
+    free(atracks);
+    free(btracks);
+    free(signtracks);
+    deallocate_matrix(dissimilarity);
+    deallocate_matrix(distance);
+    deallocate_matrix(X);
+    deallocate_matrix(B);
+    deallocate_matrix(Z);
+    deallocate_matrix(tmp);
+    deallocate_matrix(Q);
+    deallocate_matrix(L);
+    deallocate_matrix(r);
 }
 
 /**
@@ -181,55 +180,56 @@ void compute(double *avals, double *bvals, int *apos, int *bpos, int regstart, i
  */
 double cluster_separation_scorer(double **distance, double *avals, double* bvals, int *atracks, int *btracks, int asize, int bsize, int npos, double **dissimilarity,
 		int drosophila, int mds, double **X, double **B, double **Z, double **tmp, double **L, double **Q, double **result) {
-	int i, m, dims, valcount;
 
-	m = asize + bsize; /* m: number of individuals */
-	dims = 2;   /* dimension of MDS space */
-
-	/* make sure diagonal is 0 */
+    int i, m, dims, valcount;
+    
+    m = asize + bsize; /* m: number of individuals */
+    dims = 2;   /* dimension of MDS space */
+    
+    /* make sure diagonal is 0 */
     for (i = 0; i < m; i++) {
-    	dissimilarity[i][i] = 0;
+        dissimilarity[i][i] = 0;
     }
 
-	/* 1: Pairwise compare all individuals with a distance measure
-	 * to get the dissimilarity matrix */
-	if (drosophila) {
-		compare_freq(avals, bvals, npos, dissimilarity);
-	} else {
-		compare_all(avals, bvals, asize, bsize, npos, dissimilarity);
-	}
+    /* 1: Pairwise compare all individuals with a distance measure
+     * to get the dissimilarity matrix */
+    if (drosophila) {
+        compare_freq(avals, bvals, npos, dissimilarity);
+    } else {
+        compare_all(avals, bvals, asize, bsize, npos, dissimilarity);
+    }
 
-	/* fill avg and check if window should be discarded */
-	if (!fill_averages(dissimilarity, m)) {
-		return -1;
-	}
+    /* fill avg and check if window should be discarded */
+    if (!fill_averages(dissimilarity, m)) {
+        return -1;
+    }
 
-	/* 2: Use MDS to scale down to two dimensions */
-	if (mds == 0) {
-		/* Classical MDS */
-		cmds(dissimilarity, X, dims, m, B, Z, tmp, L, Q);
-	} else if (mds == 1) {
-		/* SMACOF */
-		smacof_runs(dissimilarity, m, dims, X, Q, B, Z, result, 300, 4, 0.000001);
-	} else {
-		/* SMACOF + CMDS */
-		cmds(dissimilarity, X, dims, m, B, Z, tmp, L, Q);
-		smacof(dissimilarity, m, dims, X, Q, B, Z, 300, 0.000001);
-	}
+    /* 2: Use MDS to scale down to two dimensions */
+    if (mds == 0) {
+        /* Classical MDS */
+        cmds(dissimilarity, X, dims, m, B, Z, tmp, L, Q);
+    } else if (mds == 1) {
+        /* SMACOF */
+        smacof_runs(dissimilarity, m, dims, X, Q, B, Z, result, 300, 4, 0.000001);
+    } else {
+        /* SMACOF + CMDS */
+        cmds(dissimilarity, X, dims, m, B, Z, tmp, L, Q);
+	smacof(dissimilarity, m, dims, X, Q, B, Z, 300, 0.000001);
+    }
 
 	/* 3: Calculate the cluster separation score - precalc. the distance */
-	calc_dist(X, distance, m);
-	return css(distance, atracks, btracks, asize, bsize);
+    calc_dist(X, distance, m);
+    return css(distance, atracks, btracks, asize, bsize);
 }
 
 /* gives the abs value in double
  * inlined for speed
  */
 inline double dabs(double number) {
-	if (number < 0) {
-		return -1*number;
-	}
-	return number;
+    if (number < 0) {
+        return -1*number;
+    }
+    return number;
 }
 
 /**
@@ -244,23 +244,23 @@ inline double dabs(double number) {
  */
 void compare_freq(double *avals, double *bvals, int npos, double **dissimilarity) {
 
-	/* We have frequency of the minor allele for each population,
-	 * so dissim. is a 2x2 matrix.
-	 * The diagonal is 0 (a is equal to a)
-	 * The rest contains the average of the (absolute value of the) difference
-	 * between a and b
-	 */
-	int i;
-	double avg = 0;
-
-	for (i = npos; i--; ) {
-		avg += dabs(avals[i] - bvals[i]);
-	}
-
-	avg = avg/npos;
-
-	dissimilarity[0][1] = avg;
-	dissimilarity[1][0] = avg;
+    /* We have frequency of the minor allele for each population,
+     * so dissim. is a 2x2 matrix.
+     * The diagonal is 0 (a is equal to a)
+     * The rest contains the average of the (absolute value of the) difference
+     * between a and b
+     */
+     int i;
+     double avg = 0;
+     
+     for (i = npos; i--; ) {
+         avg += dabs(avals[i] - bvals[i]);
+     }
+     
+     avg = avg/npos;
+     
+     dissimilarity[0][1] = avg;
+     dissimilarity[1][0] = avg;
 }
 
 /**
@@ -275,55 +275,55 @@ void compare_freq(double *avals, double *bvals, int npos, double **dissimilarity
  * @param dissimilarity the matrix to be filled with dissimilarity measures
  */
 void compare_all(double *avals, double *bvals, int asize, int bsize, int npos, double **dissimilarity) {
-  int i, j, k;
-  double count;
-
-  /* we skip i == j, because the dist(i,i) = 0
-   * to increase speed, this function is longer than it should be
-   * (we avoid unnecessary method calls)
-   */
-
-  /* for comparing avals with it self */
-  for (i = asize; i--; ) {
-	  for (j = i; j--; ) {
-		  count = 0;
-		  for (k = npos; k--; ) {
-		    if (((int)avals[k*asize + i]*avals[k*asize + j]) == -9) {
-				  count++;
-			  }
-		  }
-		  dissimilarity[i][j] = count;
-		  dissimilarity[j][i] = count;
+    int i, j, k;
+    double count;
+    
+    /* we skip i == j, because the dist(i,i) = 0
+     * to increase speed, this function is longer than it should be
+     * (we avoid unnecessary method calls)
+     */
+    
+    /* for comparing avals with it self */
+    for (i = asize; i--; ) {
+        for (j = i; j--; ) {
+	    count = 0;
+	    for (k = npos; k--; ) {
+	        if (((int)avals[k*asize + i]*avals[k*asize + j]) == -9) {
+		    count++;
+		}
+	    }
+	    dissimilarity[i][j] = count;
+	    dissimilarity[j][i] = count;
+	}
+    }
+    
+    /* bvals */
+    for (i = bsize; i--; ) {
+        for (j = i; j--; ) {
+	  count = 0;
+	  for (k = npos; k--; ) {
+	    if (((int)bvals[k*bsize + i]*bvals[k*bsize+j]) == -9) {
+	        count++;
+	    }
 	  }
-  }
-
-  /* bvals */
-  for (i = bsize; i--; ) {
-	  for (j = i; j--; ) {
-		  count = 0;
-		  for (k = npos; k--; ) {
-		    if (((int)bvals[k*bsize + i]*bvals[k*bsize+j]) == -9) {
-				  count++;
-			  }
-		  }
-		  dissimilarity[i+asize][j+asize] = count;
-		  dissimilarity[j+asize][i+asize] = count;
+	  dissimilarity[i+asize][j+asize] = count;
+	  dissimilarity[j+asize][i+asize] = count;
+	}
+    }
+    
+    /* avals and bvals */
+    for (i = asize; i--; ) {
+        for (j = bsize; j--; ) {
+	  count = 0;
+	  for (k = npos; k--; ) {
+	      if (((int)avals[k*asize + i]*bvals[k*bsize+j]) == -9) {
+		  count++;
+	      }
 	  }
-  }
-
-  /* avals and bvals */
-  for (i = asize; i--; ) {
-	  for (j = bsize; j--; ) {
-		  count = 0;
-		  for (k = npos; k--; ) {
-		    if (((int)avals[k*asize + i]*bvals[k*bsize+j]) == -9) {
-				  count++;
-			  }
-		  }
-		  dissimilarity[i][j+asize] = count;
-		  dissimilarity[j+asize][i] = count;
-	  }
-  }
+	  dissimilarity[i][j+asize] = count;
+	  dissimilarity[j+asize][i] = count;
+	}
+    }
 }
 
 /**
@@ -335,36 +335,34 @@ void compare_all(double *avals, double *bvals, int asize, int bsize, int npos, d
  * @return 0 if the window is discarded, 1 otherwise
  */
 int fill_averages(double **dissimilarity, int m) {
-	int i, j, unval_pos = 0, totpos = m*m;
-	double avg = 0;
-
-	for (i = m; i--; ) {
-		for (j = m; j--; ) {
-			if (dissimilarity[i][j] < 0.00001) {
-				unval_pos++;
-			} else {
-				avg += dissimilarity[i][j];
-			}
-		}
+    int i, j, unval_pos = 0, totpos = m*m;
+    double avg = 0;
+    
+    for (i = m; i--; ) {
+        for (j = m; j--; ) {
+	    if (dissimilarity[i][j] < 0.00001) {
+	        unval_pos++;
+	    } else {
+	        avg += dissimilarity[i][j];
+	    }
 	}
-
-
-	avg = avg/totpos;
-
-	// if too many were 0, discard window
-	if (unval_pos > totpos/2) {
-	  return 0;
+    }
+    avg = avg/totpos;
+    
+    // if too many were 0, discard window
+    if (unval_pos > totpos/2) {
+        return 0;
+    }
+    
+    // else, keep on filling the blanks with averages
+    for (i = m; i--; ) {
+        for (j = m; j--; ) {
+	    if (dissimilarity[i][j] < 0.00001) {
+	        dissimilarity[i][j] = avg;
+	    }
 	}
-
-	// else, keep on filling the blanks with averages
-	for (i = m; i--; ) {
-		for (j = m; j--; ) {
-			if (dissimilarity[i][j] < 0.00001) {
-				dissimilarity[i][j] = avg;
-			}
-		}
-	}
-	return 1;
+    }
+    return 1;
 }
 
 /**
@@ -375,24 +373,24 @@ int fill_averages(double **dissimilarity, int m) {
  * @param n number of columns
  */
 void allocate_matrix(double ***A, int m, int n) {
-	int i;
-	double **data = (double**)malloc(m*sizeof(double*));
-	if (data == NULL) {
-		printf("'data' is NULL, something went wrong when mallocing\n");
-		exit(1);
-	}
+    int i;
+    double **data = (double**)malloc(m*sizeof(double*));
+    if (data == NULL) {
+         printf("'data' is NULL, something went wrong when mallocing\n");
+	 exit(1);
+    }
 
-	data[0] = (double*)malloc(m*n*sizeof(double));
-	if (data[0] == NULL) {
-		printf("'data[0]' is NULL, something went wrong when mallocing\n");
-		exit(1);
-	}
-
-	for (i = 0; i < m; i++) {
-		data[i] = &(data[0][i*n]);
-	}
-
-	*A = data;
+    data[0] = (double*)malloc(m*n*sizeof(double));
+    if (data[0] == NULL) {
+        printf("'data[0]' is NULL, something went wrong when mallocing\n");
+	exit(1);
+    }
+    
+    for (i = 0; i < m; i++) {
+        data[i] = &(data[0][i*n]);
+    }
+    
+    *A = data;
 }
 
 /**
@@ -400,9 +398,9 @@ void allocate_matrix(double ***A, int m, int n) {
  *
  * @param A the matrix to be deallocated
  */
-void deallocate_matrix(double **A) {
-	free(A[0]);
-	free(A);
+void deallocate_matrix(double **A) { 
+    free(A[0]);
+    free(A);
 }
 
 /**
@@ -421,14 +419,14 @@ void deallocate_matrix(double **A) {
  * @param p the number of columns in matrix B
  */
 void matrix_mult(double **A, double **B, double **C, int m, int n, int p) {
-	gsl_matrix_view a = gsl_matrix_view_array(A[0], m, n);
-	gsl_matrix_view b = gsl_matrix_view_array(B[0], n, p);
-	gsl_matrix_view c = gsl_matrix_view_array(C[0], m, p);
-
-	/* Compute C = A B */
-	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans,
-			1.0, &a.matrix, &b.matrix,
-			0.0, &c.matrix);
+    gsl_matrix_view a = gsl_matrix_view_array(A[0], m, n);
+    gsl_matrix_view b = gsl_matrix_view_array(B[0], n, p);
+    gsl_matrix_view c = gsl_matrix_view_array(C[0], m, p);
+    
+    /* Compute C = A B */
+    gsl_blas_dgemm (CblasNoTrans, CblasNoTrans,
+		    1.0, &a.matrix, &b.matrix,
+		    0.0, &c.matrix);
 }
 
 /**
@@ -443,10 +441,10 @@ void matrix_squared(double **A, double **B, int m) {
 
     int i, j;
     for (i = m; i--; ) {
-    	for (j = m; j--; ) {
-    		B[i][j] = A[i][j]*A[i][j];
-       }
-   }  
+        for (j = m; j--; ) {
+	    B[i][j] = A[i][j]*A[i][j];
+	}
+    }  
 }
 
 /**
@@ -458,13 +456,13 @@ void matrix_squared(double **A, double **B, int m) {
  * @param m the dimension of the matrix
  */
 void matrix_sqrt(double **A, int m) {
-	int i, j;
-
-	for (i = m; i--; ) {
-		for (j = m; j--; ) {
-			A[i][j] = sqrt(A[i][j]);
-       }
-   }  
+    int i, j;
+    
+    for (i = m; i--; ) {
+        for (j = m; j--; ) {
+	    A[i][j] = sqrt(A[i][j]);
+	}
+    }  
 }
 
 /**
@@ -480,11 +478,11 @@ void matrix_sqrt(double **A, int m) {
  */
 void setup_z_matrix(double **A, int m) {
     int i, j;
-
+    
     for (i = m; i--; ) {
-    	for (j = m; j--; ) {
-    		if (i != j) A[i][j] = -1.0/m;
-    		else A[i][j] = (m-1)/(m*1.0);
+        for (j = m; j--; ) {
+	    if (i != j) A[i][j] = -1.0/m;
+	    else A[i][j] = (m-1)/(m*1.0);
     	}
     }
 }
@@ -523,8 +521,8 @@ void cmds( double **dissimilarity, double **X, int dims, int m, double **B, doub
     matrix_mult(tmp, Z, B, n, n, n);
 
     for (i = n; i--; ) {
-    	for (j = n; j--; ) {
-    		B[i][j] *= -0.5;
+        for (j = n; j--; ) {
+	    B[i][j] *= -0.5;
     	}
     }
 
@@ -543,17 +541,16 @@ void cmds( double **dissimilarity, double **X, int dims, int m, double **B, doub
     gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_VAL_DESC);
     
     for (i = dims; i--; ) {
-      double eval_i = gsl_vector_get (eval, i);
-      gsl_vector_view evec_i = gsl_matrix_column (evec, i);
-      
-      // TODO: check: only keep the 'dims' largest eigenvals > 0
-      // This will not do, I suspect?
-      L[i][i] = eval_i;
-      for (j = n; j--; ) {
-    	  Q[j][i] = gsl_vector_get(&evec_i.vector, j);
-      }
+        double eval_i = gsl_vector_get (eval, i);
+	gsl_vector_view evec_i = gsl_matrix_column (evec, i);
+	
+	// TODO: check: only keep the 'dims' largest eigenvals > 0
+	// This will not do, I suspect?
+	L[i][i] = eval_i;
+	for (j = n; j--; ) {
+    	    Q[j][i] = gsl_vector_get(&evec_i.vector, j);
+	}
     }
-
     gsl_vector_free(eval);
     gsl_matrix_free(evec); 
 
@@ -574,19 +571,19 @@ void cmds( double **dissimilarity, double **X, int dims, int m, double **B, doub
  * @param m the number of rows in A (number of individuals)
  */
 void calc_dist(double **A, double **distance, int m) {
-  int i, j;
-  double ans;
-  
-  // distance is symmetric
-  for (i = m; i--; ) {
-	  distance[i][i] = 0;
-	  for (j = i; j--; ) {
-		  ans = sqrt((A[i][0] - A[j][0])*(A[i][0] - A[j][0]) +
-				  (A[i][1] - A[j][1])*(A[i][1] - A[j][1]));
-		  distance[i][j] = ans;
-		  distance[j][i] = ans;
-	  }
-  }
+    int i, j;
+    double ans;
+    
+    // distance is symmetric
+    for (i = m; i--; ) {
+        distance[i][i] = 0;
+	for (j = i; j--; ) {
+	    ans = sqrt((A[i][0] - A[j][0])*(A[i][0] - A[j][0]) +
+		       (A[i][1] - A[j][1])*(A[i][1] - A[j][1]));
+	    distance[i][j] = ans;
+	    distance[j][i] = ans;
+	}
+    }
 }
 
 /**
@@ -610,18 +607,18 @@ void calc_dist(double **A, double **distance, int m) {
  */
 double css(double **distance,  int *atracks,  int *btracks, int asize, int bsize) {
 
-	/*
-	 * To increase speed, this function is not divided into smaller
-	 * functions
-	 */
-	int i, j;
+    /*
+     * To increase speed, this function is not divided into smaller
+     * functions
+     */
+    int i, j;
     double bet_dist, a_dist, b_dist, ab_val;
-
+    
     // average between-group distance
     bet_dist = 0;
     for (i = asize; i--; ) {
-    	for (j = bsize; j--; ) {
-    		bet_dist += distance[atracks[i]][btracks[j]];
+        for (j = bsize; j--; ) {
+	    bet_dist += distance[atracks[i]][btracks[j]];
     	}
     }
     bet_dist = bet_dist/(asize*bsize);
@@ -629,30 +626,30 @@ double css(double **distance,  int *atracks,  int *btracks, int asize, int bsize
     // within-group distance in population a
     a_dist = 0;
     if (asize > 1) {
-    	for (i = (asize-1); i--; ) {
-    		a_dist += distance[atracks[i]][atracks[i+1]];
+        for (i = (asize-1); i--; ) {
+	    a_dist += distance[atracks[i]][atracks[i+1]];
         }
     	a_dist = a_dist/(asize*asize*(asize-1));
     }
-
+    
     // within-group distance in population b
     b_dist = 0;
     if (bsize > 1) {
-    	for (i = (bsize-1); i--; ) {
-    		b_dist += distance[btracks[i]][btracks[i+1]];
+        for (i = (bsize-1); i--; ) {
+	    b_dist += distance[btracks[i]][btracks[i+1]];
         }
     	b_dist = b_dist/(bsize*bsize*(bsize-1));
     }
-  
+    
     ab_val = (asize+bsize)*(a_dist + b_dist);
-
+    
     return bet_dist - ab_val;
 }
 
 /* swap two elements.
  * inlined for speed */
 inline void swap( int *a,  int *b) {
-     int tmp = *a;
+    int tmp = *a;
     *a = *b;
     *b = tmp;
 }
@@ -676,20 +673,20 @@ PO Box 1080 Blindern, NO-0316 Oslo, Norway
 */
 
 inline long random_int_nrand48(long n, unsigned short state[]) {
-	/* Generate a random integer in the range 0 to n-1, inclusive
-	 * 	The random() function returns a random number in the range
-	 * 	0 to 2147483647 (=2^31-1=RAND_MAX), inclusive.
-	 * 	We should avoid some of the upper generated numbers to
-	 * 	avoid modulo bias.
-	 *
-	 * 	inlined for speed
-	 */
-	long random_max = RAND_MAX;
-	long limit = random_max - (random_max + 1) % n;
-	long r = nrand48(state);
-	while (r > limit)
-		r = nrand48(state);
-	return r % n;
+    /* Generate a random integer in the range 0 to n-1, inclusive
+     * 	The random() function returns a random number in the range
+     * 	0 to 2147483647 (=2^31-1=RAND_MAX), inclusive.
+     * 	We should avoid some of the upper generated numbers to
+     * 	avoid modulo bias.
+     *
+     * 	inlined for speed
+     */
+    long random_max = RAND_MAX;
+    long limit = random_max - (random_max + 1) % n;
+    long r = nrand48(state);
+    while (r > limit)
+        r = nrand48(state);
+    return r % n;
 }
 
 /**
@@ -703,7 +700,7 @@ inline long random_int_nrand48(long n, unsigned short state[]) {
 void random_shuffle( int *elms, int n, unsigned short state[]) {
     int i, r;
     for (i = n-1; i > 0; i--) {
-    	r = random_int_nrand48(i+1, state); 
+        r = random_int_nrand48(i+1, state); 
     	swap(&elms[i], &elms[r]);
     }
 }
@@ -740,16 +737,16 @@ double significance_treshold(double **distance, int *tracks, int asize, int bsiz
 
     while (hits < treshold && nscores < runs) {
         random_shuffle(tracks, ntracks, state);
-	    atracks = &(tracks[0]);
-	    btracks = &(tracks[asize]);
-
-	    newscore = css(distance, atracks, btracks, asize, bsize);
-	    if (newscore >= score) {
-	    	hits++;
-		}
-	    nscores++;
+	atracks = &(tracks[0]);
+	btracks = &(tracks[asize]);
+	
+	newscore = css(distance, atracks, btracks, asize, bsize);
+	if (newscore >= score) {
+	    hits++;
+	}
+	nscores++;
     }
-
+    
     p = (hits+1)*1.0/(nscores+1);
     return p;
 }
@@ -768,15 +765,15 @@ double significance_treshold(double **distance, int *tracks, int asize, int bsiz
  * Inlined for speed.
  */
 inline double stress(double **dissimilarity, double **D, int m) {
-	int i, j;
-	double sigma = 0;
-
-	for (i = m; i--; ) {
-		for (j = i; j--;) {
-			sigma += (D[i][j] - dissimilarity[i][j])*(D[i][j] - dissimilarity[i][j]);
-		}
+    int i, j;
+    double sigma = 0;
+    
+    for (i = m; i--; ) {
+        for (j = i; j--;) {
+	    sigma += (D[i][j] - dissimilarity[i][j])*(D[i][j] - dissimilarity[i][j]);
 	}
-	return sigma;
+    }
+    return sigma;
 }
 
 /*
@@ -787,10 +784,10 @@ inline double stress(double **dissimilarity, double **D, int m) {
  * Inlined for speed.
  */
 inline void copy_matrix(double **Z, double **X, int m) {
-	int i;
-	for (i = m; i--; ) {
-		memcpy(Z[i], X[i], 2*sizeof(double));
-	}
+    int i;
+    for (i = m; i--; ) {
+        memcpy(Z[i], X[i], 2*sizeof(double));
+    }
 }
 
 /*
@@ -812,30 +809,30 @@ inline void copy_matrix(double **Z, double **X, int m) {
  * Inlined for speed.
  */
 inline void guttman_transform(double **X, double **B, double **Z, double **D, double **dissimilarity, int m, int dims) {
-	int i, j;
-	double d;
+    int i, j;
+    double d;
 
-	for (i = m; i--; ) {
-		d = 0;
-		for (j = m; j--; ){
-			if (i != j) {
-				if (D[i][j] < 0.00001)
-					B[i][j] = 0;
-				else
-					B[i][j] = -1*dissimilarity[i][j]/D[i][j];
-				d += B[i][j];
-			}
-		}
-		B[i][i] = -1*d;
+    for (i = m; i--; ) {
+        d = 0;
+	for (j = m; j--; ){
+	    if (i != j) {
+	        if (D[i][j] < 0.00001)
+		    B[i][j] = 0;
+		else
+		    B[i][j] = -1*dissimilarity[i][j]/D[i][j];
+		d += B[i][j];
+	    }
 	}
-
-	// X^k = 1/m*B(Z)*Z
-	// B: mxm, Z: mxdims
-	matrix_mult(B, Z, X, m, m, dims);
-	for (i = m; i--; ) {
-		X[i][0] = X[i][0]/m;
-		X[i][1] = X[i][1]/m;
-	}
+	B[i][i] = -1*d;
+    }
+    
+    // X^k = 1/m*B(Z)*Z
+    // B: mxm, Z: mxdims
+    matrix_mult(B, Z, X, m, m, dims);
+    for (i = m; i--; ) {
+        X[i][0] = X[i][0]/m;
+	X[i][1] = X[i][1]/m;
+    }
 }
 
 /*
@@ -853,38 +850,37 @@ inline void guttman_transform(double **X, double **B, double **Z, double **D, do
  * @param epsilon a small number, used for convergence measure
  */
 void smacof_runs(double **dissimilarity, int m, int dims, double **X, double **Z, double **B, double **D, double **result, int max_iters, int n_init, double epsilon) {
-	/* Vederhus computed his mds by a metric SMACOF alg, python scikit.learn, with a random init and precomputed dissimilarity
- 	 dissimilarity: numerical metric of how different two data objects are. We have 0 for equal, greater score for not equal, so have dissimilarity data
- 	 eps = 0.001, max_iter = 300, n_init = 4 (run 4 times with different init, get the best of all four runs out */
-	int runs, i;
-	double sigma, sigma_best;
-	sigma_best = 99999;
-	for (runs = 0; runs < n_init; runs++) {
-
-		// initialize 'result' with random numbers between 0 and 1
-		for (i = 0; i < m; i++) {
-			result[i][0] = drand48();
-			result[i][1] = drand48();
-		}
-
-		// 'result' stores the solution from the smacof alg.
-		sigma = smacof(dissimilarity, m, dims, result, Z, B, D, max_iters, epsilon);
-
-		/*
-		 * The best according to the stress function.
-		 * Stress: minimizes the so-called stress function \sigma(X)
-		 * The final results will be the best output of the n_init consecutive runs in terms of stress.
-		 */
-		//printf("k %d sigma %g sigma_prev - sigma %g\n", k, sigma, (sigma_prev - sigma));
-		if (sigma < sigma_best) {
-			// result is new best solution
-			// store in X
-			//printf("new better solution sigma %g sigma best %g\n", sigma, sigma_best);
-			copy_matrix(X, result, m);
-			sigma_best = sigma;
-		}
+    /* Vederhus computed his mds by a metric SMACOF alg, python scikit.learn, with a random init and precomputed dissimilarity
+       dissimilarity: numerical metric of how different two data objects are. We have 0 for equal, greater score for not equal, so have dissimilarity data
+       eps = 0.001, max_iter = 300, n_init = 4 (run 4 times with different init, get the best of all four runs out */
+    int runs, i;
+    double sigma, sigma_best;
+    sigma_best = 99999;
+    for (runs = 0; runs < n_init; runs++) {
+      
+        // initialize 'result' with random numbers between 0 and 1
+        for (i = 0; i < m; i++) {
+	    result[i][0] = drand48();
+	    result[i][1] = drand48();
 	}
-	//printf("final solution k %d sigma %g sigma_prev - sigma %g\n", k, sigma, (sigma_prev - sigma));
+	
+	// 'result' stores the solution from the smacof alg.
+	sigma = smacof(dissimilarity, m, dims, result, Z, B, D, max_iters, epsilon);
+	
+	/*
+	 * The best according to the stress function.
+	 * Stress: minimizes the so-called stress function \sigma(X)
+	 * The final results will be the best output of the n_init consecutive runs in terms of stress.
+	 */
+        //printf("k %d sigma %g sigma_prev - sigma %g\n", k, sigma, (sigma_prev - sigma));
+	if (sigma < sigma_best) {
+	    // result is new best solution
+	    // store in X
+	    copy_matrix(X, result, m);
+	    sigma_best = sigma;
+	}
+    }
+
 }
 
 /*
@@ -910,38 +906,35 @@ void smacof_runs(double **dissimilarity, int m, int dims, double **X, double **Z
  */
 double smacof(double **dissimilarity, int m, int dims, double **X, double **Z, double **B, double **D, int max_iters, double epsilon) {
 
-	int i, j, k = 0;
-	double sigma, sigma_prev, d;
-
-	copy_matrix(Z, X, m);
-
-	// Step 2: Compute sigma_r = sigma_r(X^0)
-	calc_dist(X, D, m);
+    int i, j, k = 0;
+    double sigma, sigma_prev, d;
+    
+    copy_matrix(Z, X, m);
+    
+    // Step 2: Compute sigma_r = sigma_r(X^0)
+    calc_dist(X, D, m);
+    sigma = stress(dissimilarity, D, m);
+    
+    sigma_prev = 0;
+    
+    // Step 3: while ...
+    while (k == 0 || ((sigma_prev - sigma) > epsilon && k <= max_iters)) {
+      
+        sigma_prev = sigma;
+	// Step 4: increase k with 1
+	k++;
+	
+	// Step 5: Compute the Guttman transform X^k
+	guttman_transform(X, B, Z, D, dissimilarity, m, dims);
+	
+	// Step 6: sigma_r^k =sigma_r(X^k)
+	calc_dist(X,D,m);
 	sigma = stress(dissimilarity, D, m);
-	//printf("Sigma start: %g\n", sigma);
-
-	sigma_prev = 0;
-
-	// Step 3: while ...
-	while (k == 0 || ((sigma_prev - sigma) > epsilon && k <= max_iters)) {
-
-		sigma_prev = sigma;
-		// Step 4: increase k with 1
-		k++;
-
-		// Step 5: Compute the Guttman transform X^k
-		guttman_transform(X, B, Z, D, dissimilarity, m, dims);
-
-		// Step 6: sigma_r^k =sigma_r(X^k)
-		calc_dist(X,D,m);
-		sigma = stress(dissimilarity, D, m);
-
-		// Step 7: Set Z = X^k
-		copy_matrix(Z, X, m);
-	}
-
-	//printf("k %d sigma %g sigma_prev - sigma %g\n", k, sigma, (sigma_prev - sigma));
-	return sigma;
+	
+	// Step 7: Set Z = X^k
+	copy_matrix(Z, X, m);
+    }
+    return sigma;
 }
 
 
